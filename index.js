@@ -35,47 +35,33 @@ const puppeteer = require('puppeteer');
         try {
             // 遍历页码
             const pageCount = await sectionPage.$eval('#kkpager > div > span.infoTextAndGoPageBtnWrap > span.totalText > span.totalPageNum', ele => ele.firstChild.nodeValue)
-            for (let i = 1; i <= pageCount; i += 10) {
-                const tasks = []
-                for (let j = i; j < Math.min(i + 10, pageCount); j++) {
-                    tasks.push(async function () {
-                        const numPage = await browser.newPage()
-                        await numPage.goto('http://service.bj.10086.cn/phone/jxhsimcard/gotone_list.html')
-                        // 条件选择
-                        await Promise.all([
-                            numPage.click('#reserveFee_'),
-                            numPage.click(`#${sectionId}`),
-                        ])
-                        // 页面选择
-                        const pageInput = await numPage.$('#kkpager_btn_go_input')
-                        await pageInput.type(`${i}`)
-                        await numPage.click('#kkpager_btn_go')
+            for (let i = 1; i <= pageCount; i++) {
+                // 页面选择
+                const pageRes = []
+                await sectionPage.type('#kkpager_btn_go_input', `${i}`)
+                await sectionPage.click('#kkpager_btn_go')
 
-                        // 手机号 / 价格
-                        const pageRes = []
-                        for (let k = 0; k < 20; k++) {
-                            try {
-                                pageRes.push(await numPage.$eval(`#num${k}`, function (ele) {
-                                    const numEle = ele
-                                    const priceEle = ele.nextSibling
+                // 手机号 / 价格
+                for (let k = 0; k < 20; k++) {
+                    try {
+                        pageRes.push(await sectionPage.$eval(`#num${k}`, function (ele) {
+                            const numEle = ele
+                            const priceEle = ele.nextSibling
 
-                                    return {
-                                        num: ele.lastChild.nodeValue,
-                                        price: priceEle.firstChild.nodeValue,
-                                        timestamp: parseInt(new Date().getTime() / 1000),
-                                    }
-                                }))
-                            } catch (e) {
-                                break
+                            return {
+                                num: ele.lastChild.nodeValue,
+                                price: priceEle.firstChild.nodeValue,
+                                timestamp: parseInt(new Date().getTime() / 1000),
                             }
-                        }
-                        return pageRes
-                    })
+                        }))
+                    } catch (e) {
+                        console.log(`section(${sectionName}) page(${i}) : count(${k - 1})`)
+                        break
+                    }
                 }
-                await Promise.all(tasks)
 
-                // res.push(...pageRes)
-                // console.log(`section(${sectionName}) page(${i}): ${pageRes.length}`)
+                res.push(...pageRes)
+                console.log(`section(${sectionName}) page(${i}): ${pageRes.length}`)
             }
         } catch (err) {
             // 页面没有数据
