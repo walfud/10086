@@ -8,7 +8,6 @@
             "type": "node",
             "request": "launch",
             "name": "Launch Program",
-            "args": ["--proxy 49.89.86.255:32466"],
             "program": "${workspaceFolder}\\index.js"
         }
     ]
