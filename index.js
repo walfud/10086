@@ -72,7 +72,8 @@ async function fetch() {
     let browser
     try {
         browser = await puppeteer.launch({
-            headless: true
+            headless: true,
+            args: ['--no-sandbox', '--disable-setuid-sandbox'],
         })
         const page = await browser.newPage()
         await page.goto('http://service.bj.10086.cn/phone/jxhsimcard/gotone_list.html')
