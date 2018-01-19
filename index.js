@@ -47,6 +47,12 @@ apiRouter.get('/num', async(ctx, next) => {
 })
 app.use(apiRouter.routes())
 
+const uiRouter = new Router()
+uiRouter.get('/', (ctx, next) => {
+    ctx.body = 'Hello Koa'
+})
+app.use(uiRouter.routes())
+
 app.listen(3000);
 
 
