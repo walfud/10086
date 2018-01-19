@@ -72,7 +72,7 @@ async function fetch() {
     let browser
     try {
         browser = await puppeteer.launch({
-            headless: false
+            headless: true
         })
         const page = await browser.newPage()
         await page.goto('http://service.bj.10086.cn/phone/jxhsimcard/gotone_list.html')
