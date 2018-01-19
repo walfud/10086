@@ -1,10 +1,131 @@
-const puppeteer = require('puppeteer');
-const MongoClient = require('mongodb').MongoClient;
+const Koa = require('koa');
+const logger = require('koa-logger')
+const bodyParser = require('koa-bodyparser')
+const Router = require('koa-router')
+const puppeteer = require('puppeteer')
+const MongoClient = require('mongodb').MongoClient
 
 if (!process.env.MONGO_URL) {
     require('dotenv').config()
 }
 
+const app = new Koa();
+app.use(logger())
+app.use(bodyParser())
+
+let refreshState = {
+    idle: true,
+    lastTimestamp: 0,
+}
+const apiRouter = new Router({
+    prefix: '/api',
+})
+apiRouter.post('/refresh', async(ctx, next) => {
+    if (refreshState.idle) {
+        refreshState.idle = false;
+
+        (async function () {
+            await save(await fetch())
+            refreshState.idle = true
+            refreshState.lastTimestamp = parseInt(new Date().valueOf())
+        })()
+    }
+
+    ctx.body = refreshState
+})
+apiRouter.get('/num', async(ctx, next) => {
+    let client
+    try {
+        client = await MongoClient.connect(process.env.MONGO_URL)
+        const db = await client.db(process.env.DB)
+        const col = await db.collection(process.env.COLLECTION)
+        ctx.body = await col.find().toArray()
+    } catch (err) {
+        console.error(err)
+    }
+    client && client.close()
+})
+app.use(apiRouter.routes())
+
+app.listen(3000);
+
+
+
+/**
+ * 爬取 10086 手机号信息
+ * 
+ * @returns \{
+ *              num: '13911592475',
+ *              price: '30',
+ *              timestamp: 1516333513,
+ *          \}
+ */
+async function fetch() {
+    const res = []
+
+    let browser
+    try {
+        browser = await puppeteer.launch({
+            headless: false
+        })
+        const page = await browser.newPage()
+        await page.goto('http://service.bj.10086.cn/phone/jxhsimcard/gotone_list.html')
+
+        // 重置条件
+        await page.click('#reserveFee_')
+
+        // 遍历页码
+        const pageCount = await page.$eval('#kkpager > div > span.infoTextAndGoPageBtnWrap > span.totalText > span.totalPageNum', ele => ele.firstChild.nodeValue)
+        for (let i = 1; i <= pageCount; i++) {
+            const wait = parseInt(Math.random() * 3000)
+            await page.waitFor(wait)
+
+            // 页面选择
+            await page.type('#kkpager_btn_go_input', `${i}`)
+            await page.click('#kkpager_btn_go')
+
+            // 手机号 / 价格
+            const pageRes = []
+            for (let j = 0; j < 20; j++) {
+                try {
+                    pageRes.push(await page.$eval(`#num${j}`, function (ele) {
+                        const numEle = ele
+                        const priceEle = ele.nextSibling
+
+                        return {
+                            num: ele.lastChild.nodeValue,
+                            price: priceEle.firstChild.nodeValue && priceEle.firstChild.nodeValue.replace('元', ''),
+                            timestamp: parseInt(new Date().getTime() / 1000),
+                        }
+                    }))
+                } catch (e) {
+                    break
+                }
+            }
+
+            res.push(...pageRes)
+            console.log(`page(${i}/${pageCount} = ${parseInt(i * 100 / pageCount)}): ${res.length}: +${pageRes.length}`)
+        }
+    } catch (err) {
+        console.error(err)
+    }
+    browser && browser.close()
+
+    res.forEach(function (r) {
+        console.log(r)
+    })
+    return res
+}
+
+/**
+ * 保存到 mongo
+ * 
+ * @param datas \{
+ *              num: '13911592475',
+ *              price: '30',
+ *              timestamp: 1516333513,
+ *          \}
+ */
 async function save(datas) {
     let client
     try {
@@ -14,105 +135,19 @@ async function save(datas) {
 
         for (let data of datas) {
             try {
-                await col.updateOne({ num: data.num }, { $set: data }, { upsert: true })
+                await col.updateOne({
+                    num: data.num
+                }, {
+                    $set: data
+                }, {
+                    upsert: true
+                })
             } catch (err) {
                 console.error(err)
             }
         }
     } catch (err) {
-        cosnole.error(err)
+        console.error(err)
     }
     client && client.close()
-}
-
-return save([{
-    num: '1',
-    price: '0',
-    timestamp: 1,
-}])
-
-
-/**
- * num: '13911592475',
- * price: '30',
- * timestamp: 1516333513,
- */
-async function fetch() {
-    const browser = await puppeteer.launch({
-        headless: false
-    })
-
-    // 获取所有号码段 id
-    const page = await browser.newPage()
-    await page.goto('http://service.bj.10086.cn/phone/jxhsimcard/gotone_list.html')
-    const sectionIds = await page.$eval('body > div.con > div > div.sx > table > tbody > tr:nth-child(4) > td:nth-child(2) > ul', function (ele) {
-        return Array.prototype.slice.call(ele.childNodes, 0)
-            .filter(ele => ele.nodeType === 1)
-            .filter(ele => /^1..$/.test(ele.firstChild.nodeValue))
-            .map(ele => ({
-                id: ele.id,
-                nodeValue: ele.firstChild.nodeValue,
-            }))
-    })
-
-    // 重置条件
-    await page.click('#reserveFee_')
-
-    const res = []
-    for (let i = 0; i < sectionIds.length; i++) {
-        const {
-            id: sectionId,
-            nodeValue: sectionName
-        } = sectionIds[i]
-
-        // 选择号段
-        await page.click(`#${sectionId}`)
-
-        try {
-            // 遍历页码
-            const pageCount = await page.$eval('#kkpager > div > span.infoTextAndGoPageBtnWrap > span.totalText > span.totalPageNum', ele => ele.firstChild.nodeValue)
-            for (let j = 1; j <= pageCount; j++) {
-                const wait = parseInt(Math.random() * 3000)
-                console.log(`wait(${wait}ms)`)
-                await page.waitFor(wait)
-
-                // 页面选择
-                const pageRes = []
-                await page.type('#kkpager_btn_go_input', `${j}`)
-                await page.click('#kkpager_btn_go')
-
-                // 手机号 / 价格
-                for (let k = 0; k < 20; k++) {
-                    try {
-                        pageRes.push(await page.$eval(`#num${k}`, function (ele) {
-                            const numEle = ele
-                            const priceEle = ele.nextSibling
-
-                            return {
-                                num: ele.lastChild.nodeValue,
-                                price: priceEle.firstChild.nodeValue,
-                                timestamp: parseInt(new Date().getTime() / 1000),
-                            }
-                        }))
-                    } catch (e) {
-                        console.log(`section(${sectionName}) page(${j}) : count(${k - 1})`)
-                        break
-                    }
-                }
-
-                res.push(...pageRes)
-                console.log(`section(${sectionName}, ${parseInt((i + 1) * 100 / sectionIds.length)}%) page(${j}, ${parseInt(j * 100 / pageCount)}%): ${pageRes.length}`)
-            }
-        } catch (err) {
-            // 页面没有数据
-            console.log(`section(${sectionName}, ${parseInt((i + 1) * 100 / sectionIds.length)}%): fail`)
-        }
-    }
-    page.close()
-
-    res.forEach(function (r) {
-        console.log(r)
-    })
-
-    browser.close()
 }
