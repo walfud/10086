@@ -1,0 +1,23 @@
+version: "3"
+services:
+
+  node:
+    image: node
+    container_name: m10086
+    env_file: .env
+    working_dir: /10086
+    command: npm start
+    volumes:
+      - .:/10086
+    ports:
+      - "63436:3000"
+    expose:
+      - "3000"
+    networks:
+      static:
+        ipv4_address: 192.168.100.130
+
+
+networks:
+  static:
+    external: true
