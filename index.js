@@ -45,7 +45,9 @@ apiRouter.post('/refresh', async (ctx, next) => {
                 // succ
                 refreshState.result = 'succ'
 
-                nextTime = 1 * 60 * 1000
+                if (datas.length > 0) {
+                    nextTime = 1 * 60 * 1000
+                }
             } catch (err) {
                 // fail
                 refreshState.result = err.toString()
