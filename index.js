@@ -105,7 +105,7 @@ async function fetch() {
             args: ['--no-sandbox', '--disable-setuid-sandbox'],
         })
         const page = await browser.newPage()
-        await page.goto('http://service.bj.10086.cn/phone/jxhsimcard/gotone_list.html')
+        await page.goto('http://service.bj.10086.cn/phone/jxhsimcard/gotone_list.html', { timeout: 0 })
 
         // 重置条件
         await page.click('#reserveFee_')
