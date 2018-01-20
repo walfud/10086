@@ -4,7 +4,6 @@ const bodyParser = require('koa-bodyparser')
 const Router = require('koa-router')
 const puppeteer = require('puppeteer')
 const MongoClient = require('mongodb').MongoClient
-const moment = require('moment')
 
 if (!process.env.MONGO_URL) {
     require('dotenv').config()
