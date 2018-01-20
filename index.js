@@ -4,6 +4,7 @@ const bodyParser = require('koa-bodyparser')
 const Router = require('koa-router')
 const puppeteer = require('puppeteer')
 const MongoClient = require('mongodb').MongoClient
+const moment = require('moment')
 
 if (!process.env.MONGO_URL) {
     require('dotenv').config()
@@ -13,27 +14,56 @@ const app = new Koa();
 app.use(logger())
 app.use(bodyParser())
 
-let refreshState = {
-    idle: true,
-    lastTimestamp: 0,
-}
 const apiRouter = new Router({
     prefix: '/api',
 })
-apiRouter.post('/refresh', async(ctx, next) => {
-    if (refreshState.idle) {
-        refreshState.idle = false;
+let refreshState
+apiRouter.post('/refresh', async (ctx, next) => {
+    if (!refreshState) {
+        refreshState = {}
 
-        (async function () {
-            await save(await fetch())
-            refreshState.idle = true
-            refreshState.lastTimestamp = parseInt(new Date().valueOf())
-        })()
+            (async function () {
+                let nextTime = 0
+                try {
+                    // start
+                    start: parseInt(new Date().valueOf() / 1000)
+
+                    // fetch
+                    refreshState.fetch = {
+                        begin: parseInt(new Date().valueOf() / 1000),
+                    }
+                    const datas = await fetch()
+                    refreshState.fetch.end = parseInt(new Date().valueOf() / 1000)
+                    refreshState.fetch.count = datas.length
+
+                    // save
+                    refreshState.save = {
+                        begin: parseInt(new Date().valueOf() / 1000),
+                    }
+                    await save()
+                    refreshState.save.end = parseInt(new Date().valueOf() / 1000)
+
+                    // succ
+                    refreshState.result = 'succ'
+
+                    nextTime = 1 * 60 * 1000
+                } catch (err) {
+                    // fail
+                    refreshState.result = err.toString()
+                } finally {
+                    // stop
+                    refreshState.stop = parseInt(new Date().valueOf() / 1000)
+                }
+
+                setTimeout(function() {
+                    refreshState = null
+                }, nextTime)
+            })()
     }
 
     ctx.body = refreshState
 })
-apiRouter.get('/num', async(ctx, next) => {
+apiRouter.get('/num', async (ctx, next) => {
     let client
     try {
         client = await MongoClient.connect(process.env.MONGO_URL)
@@ -145,10 +175,10 @@ async function save(datas) {
                 await col.updateOne({
                     num: data.num
                 }, {
-                    $set: data
-                }, {
-                    upsert: true
-                })
+                        $set: data
+                    }, {
+                        upsert: true
+                    })
             } catch (err) {
                 console.error(err)
             }
