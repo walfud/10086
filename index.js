@@ -9,7 +9,7 @@ if (!process.env.MONGO_URL) {
     require('dotenv').config()
 }
 
-const app = new Koa();
+const app = new Koa()
 app.use(logger())
 app.use(bodyParser())
 
@@ -25,22 +25,22 @@ apiRouter.post('/refresh', async (ctx, next) => {
             let nextTime = 0
             try {
                 // start
-                start: parseInt(new Date().valueOf() / 1000)
+                refreshState.start = parseInt(new Date().valueOf() / 1000)
 
                 // fetch
-                refreshState.fetch = {
-                    begin: parseInt(new Date().valueOf() / 1000),
-                }
+                const fetchBegin = parseInt(new Date().valueOf() / 1000)
                 const datas = await fetch()
-                refreshState.fetch.end = parseInt(new Date().valueOf() / 1000)
+                const fetchEnd = parseInt(new Date().valueOf() / 1000)
+                refreshState.fetch = {}
+                refreshState.fetch.time = fetchEnd - fetchBegin
                 refreshState.fetch.count = datas.length
 
                 // save
-                refreshState.save = {
-                    begin: parseInt(new Date().valueOf() / 1000),
-                }
+                const saveBegin = arseInt(new Date().valueOf() / 1000)
                 await save(datas)
-                refreshState.save.end = parseInt(new Date().valueOf() / 1000)
+                const saveEnd = arseInt(new Date().valueOf() / 1000)
+                refreshState.save = {}
+                refreshState.save.time = saveEnd - saveBegin
 
                 // succ
                 refreshState.result = 'succ'
@@ -51,11 +51,12 @@ apiRouter.post('/refresh', async (ctx, next) => {
             } catch (err) {
                 // fail
                 refreshState.result = err.toString()
-            } finally {
-                // stop
-                refreshState.stop = parseInt(new Date().valueOf() / 1000)
             }
 
+            // stop
+            refreshState.stop = parseInt(new Date().valueOf() / 1000)
+
+            console.debug(`reset refreshState in ${nextTime}ms`)
             setTimeout(function () {
                 refreshState = null
             }, nextTime)
