@@ -113,34 +113,38 @@ async function fetch() {
         // 遍历页码
         const pageCount = await page.$eval('#kkpager > div > span.infoTextAndGoPageBtnWrap > span.totalText > span.totalPageNum', ele => ele.firstChild.nodeValue)
         for (let i = 1; i <= pageCount; i++) {
-            const wait = parseInt(Math.random() * 3000)
-            await page.waitFor(wait)
+            try {
+                // 页面选择
+                await page.type('#kkpager_btn_go_input', `${i}`)
+                await page.click('#kkpager_btn_go')
 
-            // 页面选择
-            await page.type('#kkpager_btn_go_input', `${i}`)
-            await page.click('#kkpager_btn_go')
+                // 手机号 / 价格
+                const pageRes = []
+                for (let j = 0; j < 20; j++) {
+                    try {
+                        pageRes.push(await page.$eval(`#num${j}`, function (ele) {
+                            const numEle = ele
+                            const priceEle = ele.nextSibling
 
-            // 手机号 / 价格
-            const pageRes = []
-            for (let j = 0; j < 20; j++) {
-                try {
-                    pageRes.push(await page.$eval(`#num${j}`, function (ele) {
-                        const numEle = ele
-                        const priceEle = ele.nextSibling
-
-                        return {
-                            num: ele.lastChild.nodeValue,
-                            price: priceEle.firstChild.nodeValue && priceEle.firstChild.nodeValue.replace('元', ''),
-                            timestamp: parseInt(new Date().getTime() / 1000),
-                        }
-                    }))
-                } catch (e) {
-                    break
+                            return {
+                                num: ele.lastChild.nodeValue,
+                                price: priceEle.firstChild.nodeValue && priceEle.firstChild.nodeValue.replace('元', ''),
+                                timestamp: parseInt(new Date().getTime() / 1000),
+                            }
+                        }))
+                    } catch (e) {
+                        break
+                    }
                 }
-            }
 
-            res.push(...pageRes)
-            console.log(`page(${i}/${pageCount} = ${parseInt(i * 100 / pageCount)}%): ${res.length}: +${pageRes.length}`)
+                res.push(...pageRes)
+                console.log(`page(${i}/${pageCount} = ${parseInt(i * 100 / pageCount)}%): ${res.length}: +${pageRes.length}`)
+            } catch (err) {
+                // 等待一段时间后继续
+                const wait = parseInt(Math.random() * 50 * 1000) + 10 * 1000
+                console.debug(`page(${i}) timeout, wait(${wait})`)
+                await page.waitFor(wait)
+            }
         }
     } catch (err) {
         console.error(err)
