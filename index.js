@@ -39,7 +39,7 @@ apiRouter.post('/refresh', async (ctx, next) => {
                 refreshState.save = {
                     begin: parseInt(new Date().valueOf() / 1000),
                 }
-                await save()
+                await save(datas)
                 refreshState.save.end = parseInt(new Date().valueOf() / 1000)
 
                 // succ
