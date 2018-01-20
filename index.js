@@ -140,7 +140,7 @@ async function fetch() {
             }
 
             res.push(...pageRes)
-            console.log(`page(${i}/${pageCount} = ${parseInt(i * 100 / pageCount)}): ${res.length}: +${pageRes.length}`)
+            console.log(`page(${i}/${pageCount} = ${parseInt(i * 100 / pageCount)}%): ${res.length}: +${pageRes.length}`)
         }
     } catch (err) {
         console.error(err)
