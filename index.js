@@ -36,9 +36,9 @@ apiRouter.post('/refresh', async (ctx, next) => {
                 refreshState.fetch.count = datas.length
 
                 // save
-                const saveBegin = arseInt(new Date().valueOf() / 1000)
+                const saveBegin = parseInt(new Date().valueOf() / 1000)
                 await save(datas)
-                const saveEnd = arseInt(new Date().valueOf() / 1000)
+                const saveEnd = parseInt(new Date().valueOf() / 1000)
                 refreshState.save = {}
                 refreshState.save.time = saveEnd - saveBegin
 
