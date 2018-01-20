@@ -19,45 +19,45 @@ const apiRouter = new Router({
 let refreshState
 apiRouter.post('/refresh', async (ctx, next) => {
     if (!refreshState) {
-        refreshState = {}
+        refreshState = {};
 
-            (async function () {
-                let nextTime = 0
-                try {
-                    // start
-                    start: parseInt(new Date().valueOf() / 1000)
+        (async function () {
+            let nextTime = 0
+            try {
+                // start
+                start: parseInt(new Date().valueOf() / 1000)
 
-                    // fetch
-                    refreshState.fetch = {
-                        begin: parseInt(new Date().valueOf() / 1000),
-                    }
-                    const datas = await fetch()
-                    refreshState.fetch.end = parseInt(new Date().valueOf() / 1000)
-                    refreshState.fetch.count = datas.length
-
-                    // save
-                    refreshState.save = {
-                        begin: parseInt(new Date().valueOf() / 1000),
-                    }
-                    await save()
-                    refreshState.save.end = parseInt(new Date().valueOf() / 1000)
-
-                    // succ
-                    refreshState.result = 'succ'
-
-                    nextTime = 1 * 60 * 1000
-                } catch (err) {
-                    // fail
-                    refreshState.result = err.toString()
-                } finally {
-                    // stop
-                    refreshState.stop = parseInt(new Date().valueOf() / 1000)
+                // fetch
+                refreshState.fetch = {
+                    begin: parseInt(new Date().valueOf() / 1000),
                 }
+                const datas = await fetch()
+                refreshState.fetch.end = parseInt(new Date().valueOf() / 1000)
+                refreshState.fetch.count = datas.length
 
-                setTimeout(function() {
-                    refreshState = null
-                }, nextTime)
-            })()
+                // save
+                refreshState.save = {
+                    begin: parseInt(new Date().valueOf() / 1000),
+                }
+                await save()
+                refreshState.save.end = parseInt(new Date().valueOf() / 1000)
+
+                // succ
+                refreshState.result = 'succ'
+
+                nextTime = 1 * 60 * 1000
+            } catch (err) {
+                // fail
+                refreshState.result = err.toString()
+            } finally {
+                // stop
+                refreshState.stop = parseInt(new Date().valueOf() / 1000)
+            }
+
+            setTimeout(function () {
+                refreshState = null
+            }, nextTime)
+        })()
     }
 
     ctx.body = refreshState
