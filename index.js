@@ -69,7 +69,7 @@ apiRouter.post('/refresh', async (ctx, next) => {
 })
 apiRouter.get('/num', async (ctx, next) => {
     await mongo(process.env.COLLECTION,
-        async () => await col.find().toArray(),
+        async (col) => await col.find().toArray(),
         (datas) => {
             ctx.body = datas
         },
@@ -203,7 +203,7 @@ async function mongo(colName, afn, onSucc, onFail) {
         const res = await afn(col)
         return onSucc && onSucc(res)
     } catch (err) {
-        console.error(`${colName} err: ${err}`)
+        console.error(`collection(${colName}) err: ${err}`)
         return onFail && onFail(err)
     } finally {
         client && await client.close()
