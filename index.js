@@ -68,16 +68,14 @@ apiRouter.post('/refresh', async (ctx, next) => {
     ctx.body = refreshState
 })
 apiRouter.get('/num', async (ctx, next) => {
-    let client
-    try {
-        client = await MongoClient.connect(process.env.MONGO_URL)
-        const db = await client.db(process.env.DB)
-        const col = await db.collection(process.env.COLLECTION)
-        ctx.body = await col.find().toArray()
-    } catch (err) {
-        console.error(err)
-    }
-    client && client.close()
+    await mongo(process.env.COLLECTION,
+        async () => await col.find().toArray(),
+        (datas) => {
+            ctx.body = datas
+        },
+        (err) => {
+            ctx.body = err
+        })
 })
 app.use(apiRouter.routes())
 
@@ -173,27 +171,41 @@ async function fetch() {
  *          \}
  */
 async function save(datas) {
+    mongo(process.env.COLLECTION, async function (col) {
+        for (let data of datas) {
+            await col.updateOne({
+                num: data.num
+            }, {
+                    $set: data
+                }, {
+                    upsert: true
+                })
+        }
+    })
+}
+
+/**
+ * mongo Helper
+ * 
+ * @param {*} colName 
+ * @param {*} afn 异步回调, 这里写对数据库的 CRUD
+ * @param {*} onSucc 同步, 成功回调. 参数是 afn 的返回值
+ * @param {*} onFail 同步, 失败回调. 参数是抛出的 err 对象
+ * 
+ * @returns 成功返回 onSucc 的结果, 如果没指定 onSucc 则返回 undefined. 失败返回 onFail 结果, 如果没指定, 则返回 undefined
+ */
+async function mongo(colName, afn, onSucc, onFail) {
     let client
     try {
         client = await MongoClient.connect(process.env.MONGO_URL)
         const db = await client.db(process.env.DB)
-        const col = await db.collection(process.env.COLLECTION)
-
-        for (let data of datas) {
-            try {
-                await col.updateOne({
-                    num: data.num
-                }, {
-                        $set: data
-                    }, {
-                        upsert: true
-                    })
-            } catch (err) {
-                console.error(err)
-            }
-        }
+        const col = await db.collection(colName)
+        const res = await afn(col)
+        return onSucc && onSucc(res)
     } catch (err) {
-        console.error(err)
+        console.error(`${colName} err: ${err}`)
+        return onFail && onFail(err)
+    } finally {
+        client && await client.close()
     }
-    client && client.close()
 }
