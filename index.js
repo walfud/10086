@@ -155,9 +155,6 @@ async function fetch() {
     }
     browser && browser.close()
 
-    res.forEach(function (r) {
-        console.log(r)
-    })
     return res
 }
 
