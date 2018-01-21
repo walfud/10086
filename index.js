@@ -27,20 +27,20 @@ apiRouter.post('/refresh', async (ctx, next) => {
             let nextTime = 0
             try {
                 // start
-                refreshState.start = parseInt(new Date().valueOf() / 1000)
+                refreshState.start = new Date().valueOf()
 
                 // fetch
-                const fetchBegin = parseInt(new Date().valueOf() / 1000)
+                const fetchBegin = new Date().valueOf()
                 const datas = await fetch()
-                const fetchEnd = parseInt(new Date().valueOf() / 1000)
+                const fetchEnd = new Date().valueOf()
                 refreshState.fetch = {}
                 refreshState.fetch.time = fetchEnd - fetchBegin
                 refreshState.fetch.count = datas.length
 
                 // save
-                const saveBegin = parseInt(new Date().valueOf() / 1000)
+                const saveBegin = new Date().valueOf()
                 await save(datas)
-                const saveEnd = parseInt(new Date().valueOf() / 1000)
+                const saveEnd = new Date().valueOf()
                 refreshState.save = {}
                 refreshState.save.time = saveEnd - saveBegin
 
@@ -56,7 +56,7 @@ apiRouter.post('/refresh', async (ctx, next) => {
             }
 
             // stop
-            refreshState.stop = parseInt(new Date().valueOf() / 1000)
+            refreshState.stop = new Date().valueOf()
 
             console.debug(`reset refreshState in ${nextTime}ms`)
             setTimeout(function () {
