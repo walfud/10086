@@ -147,7 +147,12 @@ async function fetch() {
             } catch (err) {
                 // 等待一段时间后继续
                 console.debug(`page(${i}) reload`)
-                page.reload({ timeout: 0 })
+                try {
+                    await page.reload({ timeout: 0 })
+                    await page.click('#reserveFee_')
+                } catch (err) {
+                    console.error(`reload error: ${err}`)
+                }
             }
         }
     } catch (err) {
