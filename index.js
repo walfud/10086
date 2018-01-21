@@ -18,7 +18,9 @@ const apiRouter = new Router({
 })
 let refreshState
 apiRouter.post('/refresh', async (ctx, next) => {
-    if (!refreshState) {
+    // 被重置或者超过 60 分钟后, 可重新 refresh
+    if (!refreshState
+        || (refreshState.start + 60 * 60 * 1000) < (new Date().valueOf())) {
         refreshState = {};
 
         (async function () {
@@ -144,9 +146,8 @@ async function fetch() {
                 console.log(`page(${i}/${pageCount} = ${parseInt(i * 100 / pageCount)}%): ${res.length}: +${pageRes.length}`)
             } catch (err) {
                 // 等待一段时间后继续
-                const wait = parseInt(Math.random() * 50 * 1000) + 10 * 1000
-                console.debug(`page(${i}) timeout, wait(${wait})`)
-                await page.waitFor(wait)
+                console.debug(`page(${i}) reload`)
+                page.reload({ timeout: 0 })
             }
         }
     } catch (err) {
