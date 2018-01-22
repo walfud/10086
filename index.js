@@ -73,6 +73,13 @@ apiRouter.post('/refresh', async (ctx, next) => {
  * @argument like 正则, 手机号模式, 如 like=136....0405
  */
 apiRouter.get('/num', async (ctx, next) => {
+    const cond = {}
+    if (ctx.request.body.no4) {
+        cond.num = {
+
+        }
+    }
+
     await mongo(process.env.COLLECTION,
         async (col) => await col.find().toArray(),
         (datas) => {
@@ -103,14 +110,16 @@ app.listen(3000);
  *              timestamp: 1516333513,
  *          \}
  */
-async function fetch() {
+async function fetch(proxyServer, startPage = 1) {
     const res = []
 
     let browser
     try {
+        const args = ['--no-sandbox', '--disable-setuid-sandbox']
+        proxyServer && args.push(`--proxy-server=${proxyServer}`)
         browser = await puppeteer.launch({
             headless: true,
-            args: ['--no-sandbox', '--disable-setuid-sandbox'],
+            args,
         })
         const page = await browser.newPage()
         await page.goto('http://service.bj.10086.cn/phone/jxhsimcard/gotone_list.html', { timeout: 0 })
@@ -119,8 +128,8 @@ async function fetch() {
         await page.click('#reserveFee_')
 
         // 遍历页码
-        const pageCount = await page.$eval('#kkpager > div > span.infoTextAndGoPageBtnWrap > span.totalText > span.totalPageNum', ele => ele.firstChild.nodeValue)
-        for (let i = 1; i <= pageCount; i++) {
+        const pageCount = parseInt(await page.$eval('#kkpager > div > span.infoTextAndGoPageBtnWrap > span.totalText > span.totalPageNum', ele => ele.firstChild.nodeValue))
+        for (let i = startPage; i <= pageCount; i++) {
             try {
                 // 页面选择
                 await page.type('#kkpager_btn_go_input', `${i}`)
