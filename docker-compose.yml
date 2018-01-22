@@ -2,7 +2,7 @@ version: "3"
 services:
 
   node:
-    image: node:8.9.4
+    image: alekzonder/puppeteer
     container_name: m10086
     env_file: .env
     working_dir: /10086
