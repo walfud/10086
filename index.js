@@ -4,23 +4,30 @@ const bodyParser = require('koa-bodyparser')
 const Router = require('koa-router')
 const puppeteer = require('puppeteer')
 const MongoClient = require('mongodb').MongoClient
+const fetch = require('node-fetch')
 
 if (!process.env.MONGO_URL) {
     require('dotenv').config()
 }
+const URL_10086 = 'http://service.bj.10086.cn/phone/jxhsimcard/gotone_list.html'
 
 const app = new Koa()
 app.use(logger())
-app.use(bodyParser())
+app.use(bodyParser({
+    extendTypes: {
+        json: ['application/x-javascript'], // will parse application/x-javascript type body as a JSON string
+        form: ['application/x-www-form-urlencoded'],
+      }
+}))
 
 const apiRouter = new Router({
     prefix: '/api',
 })
 let refreshState
-apiRouter.post('/refresh', async (ctx, next) => {
+apiRouter.post('/refresh', async(ctx, next) => {
     // 被重置或者超过 60 分钟后, 可重新 refresh
-    if (!refreshState
-        || (refreshState.start + 60 * 60 * 1000) < (new Date().valueOf())) {
+    if (!refreshState ||
+        (refreshState.start + 60 * 60 * 1000) < (new Date().valueOf())) {
         refreshState = {};
 
         (async function () {
@@ -31,7 +38,7 @@ apiRouter.post('/refresh', async (ctx, next) => {
 
                 // fetch
                 const fetchBegin = new Date().valueOf()
-                const datas = await fetch()
+                const datas = await crawler()
                 const fetchEnd = new Date().valueOf()
                 refreshState.fetch = {}
                 refreshState.fetch.time = fetchEnd - fetchBegin
@@ -72,16 +79,42 @@ apiRouter.post('/refresh', async (ctx, next) => {
  * @argument price range, 价格闭区间, 如 price=0-300
  * @argument like 正则, 手机号模式, 如 like=136....0405
  */
-apiRouter.get('/num', async (ctx, next) => {
-    const cond = {}
-    if (ctx.request.body.no4) {
-        cond.num = {
+apiRouter.get('/num', async(ctx, next) => {
+    const pipeline = []
 
-        }
+    // 不包含 4
+    if (ctx.request.body.no4) {
+        pipeline.push({
+            $match: {
+                num: /^[0-35-9]$/
+            }
+        })
+    }
+    // 价格
+    if (ctx.request.body.price) {
+        [min = 0, max = 999999999] = ctx.request.body.price.split('-')
+        pipeline.push({
+            $match: {
+                price: {
+                    $gt: min,
+                    $lt: max,
+                }
+            }
+        })
+    }
+    // like
+    if (ctx.request.body.like) {
+        pipeline.push({
+            $match: {
+                num: {
+                    $regex: new RegExp(`^${like}$`),
+                }
+            }
+        })
     }
 
     await mongo(process.env.COLLECTION,
-        async (col) => await col.find().toArray(),
+        async(col) => await col.aggregate(pipeline).toArray(),
         (datas) => {
             ctx.body = datas
         },
@@ -110,69 +143,71 @@ app.listen(3000);
  *              timestamp: 1516333513,
  *          \}
  */
-async function fetch(proxyServer, startPage = 1) {
+async function crawler() {
     const res = []
-
-    let browser
     try {
-        const args = ['--no-sandbox', '--disable-setuid-sandbox']
-        proxyServer && args.push(`--proxy-server=${proxyServer}`)
-        browser = await puppeteer.launch({
-            headless: true,
-            args,
-        })
-        const page = await browser.newPage()
-        await page.goto('http://service.bj.10086.cn/phone/jxhsimcard/gotone_list.html', { timeout: 0 })
-
-        // 重置条件
-        await page.click('#reserveFee_')
-
-        // 遍历页码
-        const pageCount = parseInt(await page.$eval('#kkpager > div > span.infoTextAndGoPageBtnWrap > span.totalText > span.totalPageNum', ele => ele.firstChild.nodeValue))
-        for (let i = startPage; i <= pageCount; i++) {
-            try {
-                // 页面选择
-                i !== startPage && await page.waitFor(parseInt(Math.random() * 30 * 1000))
-                await page.type('#kkpager_btn_go_input', `${i}`)
-                await page.click('#kkpager_btn_go')
-
-                // 手机号 / 价格
-                const pageRes = []
-                for (let j = 0; j < 20; j++) {
-                    try {
-                        pageRes.push(await page.$eval(`#num${j}`, function (ele) {
-                            const numEle = ele
-                            const priceEle = ele.nextSibling
-
-                            return {
-                                num: ele.lastChild.nodeValue,
-                                price: parseInt(priceEle.firstChild.nodeValue && priceEle.firstChild.nodeValue.replace('元', '')),
-                                timestamp: parseInt(new Date().getTime() / 1000),
-                            }
-                        }))
-                    } catch (e) {
-                        break
-                    }
-                }
-
-                res.push(...pageRes)
-                console.log(`page(${i}/${pageCount} = ${parseInt(i * 100 / pageCount)}%): ${res.length}: +${pageRes.length}`)
-            } catch (err) {
-                // 等待一段时间后继续
-                console.debug(`page(${i}) reload`)
-                try {
-                    await page.reload({ timeout: 0 })
+        let pos = 1
+        for (let i = 0; i < 100; i++) {
+            // 获取页数
+            const pageCount = await browse(URL_10086, 0,
+                async function (page) {
+                    // 重置条件
                     await page.click('#reserveFee_')
-                } catch (err) {
-                    console.error(`reload error: ${err}`)
-                }
+
+                    return parseInt(await page.$eval('#kkpager > div > span.infoTextAndGoPageBtnWrap > span.totalText > span.totalPageNum', ele => ele.firstChild.nodeValue))
+                },
+                (err, url, proxyServer) => console.debug(`get pageCount fail: proxy(${proxyServer})`),
+                await getProxy(),
+            )
+
+            // 爬取所有页数据
+            const proxyServer = await getProxy()
+            console.debug(`page(${pos}) try: proxy(${proxyServer})`)
+            await browse(URL_10086, 60 * 1000, async function (page) {
+                    // 重置条件
+                    await page.click('#reserveFee_')
+
+                    while (pos < pageCount) {
+                        // 页面选择
+                        await page.type('#kkpager_btn_go_input', `${pos}`)
+                        await page.click('#kkpager_btn_go')
+
+                        // 手机号 / 价格
+                        const pageRes = []
+                        for (let i = 0; i < 20; i++) {
+                            try {
+                                pageRes.push(await page.$eval(`#num${i}`, function (ele) {
+                                    const numEle = ele
+                                    const priceEle = ele.nextSibling
+
+                                    return {
+                                        num: ele.lastChild.nodeValue,
+                                        price: parseInt(priceEle.firstChild.nodeValue && priceEle.firstChild.nodeValue.replace('元', '')),
+                                        timestamp: parseInt(new Date().getTime() / 1000),
+                                    }
+                                }))
+                            } catch (e) {
+                                break
+                            }
+                        }
+
+                        res.push(...pageRes)
+                        console.log(`page(${pos}/${pageCount} = ${parseInt(pos * 100 / pageCount)}%): +${pageRes.length}: ${res.length}. proxy(${proxyServer})`)
+
+                        pos++
+                    }
+                },
+                (err, url, proxyServer) => console.debug(`page(${pos}) fail: proxy(${proxyServer})`),
+                proxyServer,
+            )
+
+            if (pos >= pageCount) {
+                break
             }
         }
     } catch (err) {
-        console.error(err)
+        console.log(`crawler fail: ${err}`)
     }
-    browser && browser.close()
-
     return res
 }
 
@@ -191,10 +226,10 @@ async function save(datas) {
             await col.updateOne({
                 num: data.num
             }, {
-                    $set: data
-                }, {
-                    upsert: true
-                })
+                $set: data
+            }, {
+                upsert: true
+            })
         }
     })
 }
@@ -222,5 +257,60 @@ async function mongo(colName, afn, onSucc, onFail) {
         return onFail && onFail(err)
     } finally {
         client && await client.close()
+    }
+}
+
+async function getProxy() {
+    for (let i = 0; i < 100; i++) {
+        const proxyServer = await fetch('http://123.207.35.36:5010/get').then(res => res.text())
+        console.debug(`try proxy: ${proxyServer}`)
+        const beginTime = new Date().valueOf()
+        const test = await browse(URL_10086, 60 * 1000,
+            async function (page) {
+                // 尝试点击 go 按钮
+                await page.click('#kkpager_btn_go')
+
+                console.debug(`proxy available: ${proxyServer}, time: ${parseInt((new Date().valueOf() - beginTime) / 1000)}s`)
+                return proxyServer
+            },
+            () => console.debug(`proxy fail: ${proxyServer}, time: ${parseInt((new Date().valueOf() - beginTime) / 1000)}s`),
+            proxyServer,
+        )
+
+        if (test) {
+            return test
+        }
+    }
+}
+
+/**
+ * 
+ * @param {*} url 
+ * @param {*} onSucc function(page, url, proxyServer)
+ * @param {*} onFail function(err, url, proxyServer)
+ * @param {*} proxyServer 
+ * @returns onSucc 或 onFail 的返回值
+ */
+async function browse(url, timeout, onSucc, onFail, proxyServer) {
+    let browser
+    try {
+        const args = ['--no-sandbox', '--disable-setuid-sandbox']
+        proxyServer && args.push(`--proxy-server=${proxyServer}`)
+        browser = await puppeteer.launch({
+            headless: true,
+            args,
+        })
+        const page = await browser.newPage()
+        await page.goto(url, {
+            timeout,
+        })
+        const res = onSucc && onSucc(page, url, proxyServer)
+        return res && res.then ? await res : res
+    } catch (err) {
+        console.error(err)
+        const res = onFail && onFail(err, url, proxyServer)
+        return res && res.then ? await res : res
+    } finally {
+        browser && browser.close()
     }
 }
