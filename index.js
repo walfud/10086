@@ -132,6 +132,7 @@ async function fetch(proxyServer, startPage = 1) {
         for (let i = startPage; i <= pageCount; i++) {
             try {
                 // 页面选择
+                i !== startPage && await page.waitFor(parseInt(Math.random() * 30 * 1000))
                 await page.type('#kkpager_btn_go_input', `${i}`)
                 await page.click('#kkpager_btn_go')
 
