@@ -67,6 +67,11 @@ apiRouter.post('/refresh', async (ctx, next) => {
 
     ctx.body = refreshState
 })
+/**
+ * @argument no4 bool, 不含 4
+ * @argument price range, 价格闭区间, 如 price=0-300
+ * @argument like 正则, 手机号模式, 如 like=136....0405
+ */
 apiRouter.get('/num', async (ctx, next) => {
     await mongo(process.env.COLLECTION,
         async (col) => await col.find().toArray(),
@@ -131,7 +136,7 @@ async function fetch() {
 
                             return {
                                 num: ele.lastChild.nodeValue,
-                                price: priceEle.firstChild.nodeValue && priceEle.firstChild.nodeValue.replace('元', ''),
+                                price: parseInt(priceEle.firstChild.nodeValue && priceEle.firstChild.nodeValue.replace('元', '')),
                                 timestamp: parseInt(new Date().getTime() / 1000),
                             }
                         }))
