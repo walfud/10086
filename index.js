@@ -13,12 +13,7 @@ const URL_10086 = 'http://service.bj.10086.cn/phone/jxhsimcard/gotone_list.html'
 
 const app = new Koa()
 app.use(logger())
-app.use(bodyParser({
-    extendTypes: {
-        json: ['application/x-javascript'], // will parse application/x-javascript type body as a JSON string
-        form: ['application/x-www-form-urlencoded'],
-      }
-}))
+app.use(bodyParser())
 
 const apiRouter = new Router({
     prefix: '/api',
@@ -270,10 +265,10 @@ async function getProxy() {
                 // 尝试点击 go 按钮
                 await page.click('#kkpager_btn_go')
 
-                console.debug(`proxy available: ${proxyServer}, time: ${parseInt((new Date().valueOf() - beginTime) / 1000)}s`)
+                console.debug(`proxy(${i}/100) available: ${proxyServer}, time: ${parseInt((new Date().valueOf() - beginTime) / 1000)}s`)
                 return proxyServer
             },
-            () => console.debug(`proxy fail: ${proxyServer}, time: ${parseInt((new Date().valueOf() - beginTime) / 1000)}s`),
+            () => console.debug(`proxy(${i}/100) fail: ${proxyServer}, time: ${parseInt((new Date().valueOf() - beginTime) / 1000)}s`),
             proxyServer,
         )
 
