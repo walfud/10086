@@ -13,7 +13,7 @@ const URL_10086 = 'http://service.bj.10086.cn/phone/jxhsimcard/gotone_list.html'
 
 const app = new Koa()
 app.use(logger())
-app.use(bodyParser())
+// app.use(bodyParser())
 
 const apiRouter = new Router({
     prefix: '/api',
@@ -78,31 +78,31 @@ apiRouter.get('/num', async(ctx, next) => {
     const pipeline = []
 
     // 不包含 4
-    if (ctx.request.body.no4) {
+    if (ctx.request.query.no4) {
         pipeline.push({
             $match: {
-                num: /^[0-35-9]$/
+                num: /^1[0-35-9]{10}$/
             }
         })
     }
     // 价格
-    if (ctx.request.body.price) {
-        [min = 0, max = 999999999] = ctx.request.body.price.split('-')
+    if (ctx.request.query.price) {
+        const [min = 0, max = 999999999] = ctx.request.query.price.split('-')
         pipeline.push({
             $match: {
                 price: {
-                    $gt: min,
-                    $lt: max,
+                    $gte: parseInt(min),
+                    $lte: parseInt(max),
                 }
             }
         })
     }
     // like
-    if (ctx.request.body.like) {
+    if (ctx.request.query.like) {
         pipeline.push({
             $match: {
                 num: {
-                    $regex: new RegExp(`^${like}$`),
+                    $regex: new RegExp(`^${ctx.request.query.like}$`),
                 }
             }
         })
