@@ -132,14 +132,16 @@ app.listen(3000);
 /**
  * 爬取 10086 手机号信息
  * 
- * @returns \{
- *              num: '13911592475',
- *              price: '30',
- *              timestamp: 1516333513,
- *          \}
+ * @returns [
+ *              {
+ *                  num: '13911592475',
+ *                  price: '30',
+ *                  timestamp: 1516333513,
+ *              },
+ *          ]
  */
 async function crawler() {
-    const res = []
+    const res = new Map()
     try {
         let pos = 1
         for (let i = 0; i < 100; i++) {
@@ -168,10 +170,10 @@ async function crawler() {
                         await page.click('#kkpager_btn_go')
 
                         // 手机号 / 价格
-                        const pageRes = []
+                        const originCount = res.size
                         for (let i = 0; i < 20; i++) {
                             try {
-                                pageRes.push(await page.$eval(`#num${i}`, function (ele) {
+                                const data = await page.$eval(`#num${i}`, function (ele) {
                                     const numEle = ele
                                     const priceEle = ele.nextSibling
 
@@ -180,14 +182,15 @@ async function crawler() {
                                         price: parseInt(priceEle.firstChild.nodeValue && priceEle.firstChild.nodeValue.replace('元', '')),
                                         timestamp: parseInt(new Date().getTime() / 1000),
                                     }
-                                }))
+                                })
+
+                                res.set(data.num, data)
                             } catch (e) {
                                 break
                             }
                         }
 
-                        res.push(...pageRes)
-                        console.log(`page(${pos}/${pageCount} = ${parseInt(pos * 100 / pageCount)}%): +${pageRes.length}: ${res.length}. proxy(${proxyServer})`)
+                        console.log(`page(${pos}/${pageCount} = ${parseInt(pos * 100 / pageCount)}%): +${res.size - originCount}: ${res.size}. proxy(${proxyServer})`)
 
                         pos++
                     }
@@ -203,7 +206,7 @@ async function crawler() {
     } catch (err) {
         console.log(`crawler fail: ${err}`)
     }
-    return res
+    return [...res.values()]
 }
 
 /**
@@ -255,10 +258,18 @@ async function mongo(colName, afn, onSucc, onFail) {
     }
 }
 
+const proxyBlacklist = new Map()
 async function getProxy() {
     for (let i = 0; i < 100; i++) {
         const proxyServer = await fetch('http://123.207.35.36:5010/get').then(res => res.text())
-        console.debug(`try proxy: ${proxyServer}`)
+        if (proxyBlacklist.has(proxyServer)
+            && proxyBlacklist.get(proxyServer) + 60 * 60 * 1000 > new Date().valueOf()) {   // 一小时过期
+            console.log(`proxy(${i}/100) blacklist: ${proxyServer}`)
+            continue
+        }
+        proxyServer.set(proxyServer, new Date().valueOf())
+
+        console.debug(`try proxy(${i}/100): ${proxyServer}`)
         const beginTime = new Date().valueOf()
         const test = await browse(URL_10086, 60 * 1000,
             async function (page) {
