@@ -267,7 +267,7 @@ async function getProxy() {
             console.log(`proxy(${i}/100) blacklist: ${proxyServer}`)
             continue
         }
-        proxyServer.set(proxyServer, new Date().valueOf())
+        proxyBlacklist.set(proxyServer, new Date().valueOf())
 
         console.debug(`try proxy(${i}/100): ${proxyServer}`)
         const beginTime = new Date().valueOf()
