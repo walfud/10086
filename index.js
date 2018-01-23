@@ -162,7 +162,7 @@ async function crawler() {
                     // 重置条件
                     await page.click('#reserveFee_')
 
-                    while (pos < pageCount) {
+                    while (pos <= pageCount) {
                         // 页面选择
                         await page.type('#kkpager_btn_go_input', `${pos}`)
                         await page.click('#kkpager_btn_go')
