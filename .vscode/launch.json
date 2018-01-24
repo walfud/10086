@@ -10,7 +10,7 @@
             "name": "Launch Program",
             "program": "${workspaceFolder}/server/index.js",
             "outFiles": [
-                "${workspaceRoot}/dist/**.js"
+                "${workspaceRoot}/build/**.js"
             ]
         }
     ]

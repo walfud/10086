@@ -3,9 +3,9 @@ const path = require('path')
 module.exports = {
     devtool: 'eval-source-map',
 
-    entry: `${__dirname}/web/index.js`,
+    entry: `${__dirname}/app/index.js`,
     output: {
-        filename: 'web.bundle.js',
+        filename: 'app.bundle.js',
         path: `${__dirname}/dist`,
     },
     module: {

@@ -1,7 +1,10 @@
+import fs from 'fs'
+import path from 'path'
 import Koa from 'koa'
 import logger from 'koa-logger'
 import bodyParser from 'koa-bodyparser'
 import Router from 'koa-router'
+import serve from 'koa-static'
 import puppeteer from 'puppeteer'
 import {
     MongoClient
@@ -17,6 +20,8 @@ const URL_10086 = 'http://service.bj.10086.cn/phone/jxhsimcard/gotone_list.html'
 const app = new Koa()
 app.use(logger())
 app.use(bodyParser())
+// app.use(serve(path.resolve(__dirname, '../dist')))
+app.use(serve(`${__dirname}/../dist`))
 
 const apiRouter = new Router({
     prefix: '/api',
@@ -124,7 +129,23 @@ app.use(apiRouter.routes())
 
 const uiRouter = new Router()
 uiRouter.get('/', (ctx, next) => {
-    ctx.body = 'Hello Koa'
+    ctx.body = `
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <title></title>
+</head>
+
+<body>
+    <div id="root">
+    </div>
+    <script src="/app.bundle.js"></script>
+</body>
+
+</html>
+`
 })
 app.use(uiRouter.routes())
 
