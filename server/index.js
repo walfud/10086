@@ -265,6 +265,7 @@ async function mongo(colName, afn, onSucc, onFail) {
 const proxyBlacklist = new Map()
 async function getProxy() {
     for (let i = 0; i < 100; i++) {
+        // https://github.com/jhao104/proxy_pool
         const proxyServer = await fetch('http://123.207.35.36:5010/get').then(res => res.text()).catch(() => {})
         if (!proxyServer ||
             (proxyBlacklist.has(proxyServer) && proxyBlacklist.get(proxyServer) + 60 * 60 * 1000 > new Date().valueOf())) { // 一小时过期
