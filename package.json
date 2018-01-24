@@ -4,7 +4,8 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "start": "npm install && node index.js",
+    "start": "npm run build && babel-node server/index.js",
+    "build": "webpack && babel server -d dist --source-maps",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
@@ -12,12 +13,24 @@
   "license": "ISC",
   "dependencies": {
     "dotenv": "^4.0.0",
+    "ip": "^1.1.5",
     "koa": "^2.4.1",
     "koa-bodyparser": "^4.2.0",
     "koa-logger": "^3.1.0",
     "koa-router": "^7.3.0",
     "mongodb": "^3.0.1",
     "node-fetch": "^1.7.3",
-    "puppeteer": "^1.0.0"
+    "puppeteer": "^1.0.0",
+    "react": "^16.2.0",
+    "react-dom": "^16.2.0"
+  },
+  "devDependencies": {
+    "babel-core": "^6.26.0",
+    "babel-env": "^2.4.1",
+    "babel-loader": "^7.1.2",
+    "babel-plugin-transform-runtime": "^6.23.0",
+    "babel-polyfill": "^6.26.0",
+    "babel-preset-env": "^1.6.1",
+    "webpack": "^3.10.0"
   }
 }

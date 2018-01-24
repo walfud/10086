@@ -1,19 +1,22 @@
-const Koa = require('koa');
-const logger = require('koa-logger')
-const bodyParser = require('koa-bodyparser')
-const Router = require('koa-router')
-const puppeteer = require('puppeteer')
-const MongoClient = require('mongodb').MongoClient
-const fetch = require('node-fetch')
+import Koa from 'koa'
+import logger from 'koa-logger'
+import bodyParser from 'koa-bodyparser'
+import Router from 'koa-router'
+import puppeteer from 'puppeteer'
+import {
+    MongoClient
+} from 'mongodb'
+import fetch from 'node-fetch'
+import ip from 'ip'
 
 if (!process.env.MONGO_URL) {
     require('dotenv').config()
 }
-const URL_10086 = 'http://service.bj.10086.cn/phone/jxhsimcard/gotone_list.html'
 
+const URL_10086 = 'http://service.bj.10086.cn/phone/jxhsimcard/gotone_list.html'
 const app = new Koa()
 app.use(logger())
-// app.use(bodyParser())
+app.use(bodyParser())
 
 const apiRouter = new Router({
     prefix: '/api',
@@ -60,7 +63,7 @@ apiRouter.post('/refresh', async(ctx, next) => {
             // stop
             refreshState.stop = new Date().valueOf()
 
-            console.debug(`reset refreshState in ${nextTime}ms`)
+            console.log(`reset refreshState in ${nextTime}ms`)
             setTimeout(function () {
                 refreshState = null
             }, nextTime)
@@ -126,6 +129,7 @@ uiRouter.get('/', (ctx, next) => {
 app.use(uiRouter.routes())
 
 app.listen(3000);
+console.log(`10086 listen on ${ip.address()}:3000`)
 
 
 
@@ -153,13 +157,13 @@ async function crawler() {
 
                     return parseInt(await page.$eval('#kkpager > div > span.infoTextAndGoPageBtnWrap > span.totalText > span.totalPageNum', ele => ele.firstChild.nodeValue))
                 },
-                (err, url, proxyServer) => console.debug(`get pageCount fail: proxy(${proxyServer})`),
+                (err, url, proxyServer) => console.log(`get pageCount fail: proxy(${proxyServer})`),
                 await getProxy(),
             )
 
             // 爬取所有页数据
             const proxyServer = await getProxy()
-            console.debug(`page(${pos}) try: proxy(${proxyServer})`)
+            console.log(`page(${pos}) try: proxy(${proxyServer})`)
             await browse(URL_10086, 60 * 1000, async function (page) {
                     // 重置条件
                     await page.click('#reserveFee_')
@@ -195,7 +199,7 @@ async function crawler() {
                         pos++
                     }
                 },
-                (err, url, proxyServer) => console.debug(`page(${pos}) fail: proxy(${proxyServer})`),
+                (err, url, proxyServer) => console.log(`page(${pos}) fail: proxy(${proxyServer})`),
                 proxyServer,
             )
 
@@ -262,24 +266,24 @@ const proxyBlacklist = new Map()
 async function getProxy() {
     for (let i = 0; i < 100; i++) {
         const proxyServer = await fetch('http://123.207.35.36:5010/get').then(res => res.text()).catch(() => {})
-        if (!proxyServer
-            || (proxyBlacklist.has(proxyServer) && proxyBlacklist.get(proxyServer) + 60 * 60 * 1000 > new Date().valueOf())) {   // 一小时过期
+        if (!proxyServer ||
+            (proxyBlacklist.has(proxyServer) && proxyBlacklist.get(proxyServer) + 60 * 60 * 1000 > new Date().valueOf())) { // 一小时过期
             console.log(`proxy(${i}/100) blacklist: ${proxyServer}`)
             continue
         }
         proxyBlacklist.set(proxyServer, new Date().valueOf())
 
-        console.debug(`try proxy(${i}/100): ${proxyServer}`)
+        console.log(`try proxy(${i}/100): ${proxyServer}`)
         const beginTime = new Date().valueOf()
         const test = await browse(URL_10086, 60 * 1000,
             async function (page) {
                 // 尝试点击 go 按钮
                 await page.click('#kkpager_btn_go')
 
-                console.debug(`proxy(${i}/100) available: ${proxyServer}, time: ${parseInt((new Date().valueOf() - beginTime) / 1000)}s`)
+                console.log(`proxy(${i}/100) available: ${proxyServer}, time: ${parseInt((new Date().valueOf() - beginTime) / 1000)}s`)
                 return proxyServer
             },
-            () => console.debug(`proxy(${i}/100) fail: ${proxyServer}, time: ${parseInt((new Date().valueOf() - beginTime) / 1000)}s`),
+            () => console.log(`proxy(${i}/100) fail: ${proxyServer}, time: ${parseInt((new Date().valueOf() - beginTime) / 1000)}s`),
             proxyServer,
         )
 
