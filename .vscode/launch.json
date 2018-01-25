@@ -12,6 +12,15 @@
             "outFiles": [
                 "${workspaceRoot}/build/**.js"
             ]
+        },
+        {
+            // https://github.com/Microsoft/vscode-chrome-debug
+            "type": "chrome",
+            "request": "launch",
+            "name": "Launch Chrome",
+            "url": "http://localhost:3000/",
+            "webRoot": "${workspaceFolder}",
+            "smartStep": true
         }
     ]
 }

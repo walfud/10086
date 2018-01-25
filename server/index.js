@@ -135,7 +135,7 @@ uiRouter.get('/', (ctx, next) => {
 
 <head>
     <meta charset="utf-8">
-    <title></title>
+    <title>My 10086</title>
 </head>
 
 <body>
