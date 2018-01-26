@@ -26,7 +26,7 @@ const apiRouter = new Router({
     prefix: '/api',
 })
 let refreshState
-apiRouter.post('/refresh', async(ctx, next) => {
+apiRouter.post('/refresh', async (ctx, next) => {
     // 被重置或者超过 60 分钟后, 可重新 refresh
     if (!refreshState ||
         (refreshState.start + 60 * 60 * 1000) < (new Date().valueOf())) {
@@ -81,7 +81,7 @@ apiRouter.post('/refresh', async(ctx, next) => {
  * @argument price range, 价格闭区间, 如 price=0-300
  * @argument like 正则, 手机号模式, 如 like=136....0405
  */
-apiRouter.get('/num', async(ctx, next) => {
+apiRouter.get('/num', async (ctx, next) => {
     const pipeline = []
 
     // 不包含 4
@@ -116,13 +116,14 @@ apiRouter.get('/num', async(ctx, next) => {
     }
 
     await mongo(process.env.COLLECTION,
-        async(col) => await col.aggregate(pipeline).toArray(),
+        async (col) => await col.aggregate(pipeline).toArray(),
         (datas) => {
             ctx.body = datas
         },
         (err) => {
             ctx.body = err
         })
+    ctx.set('Access-Control-Allow-Origin', '*')
 })
 app.use(apiRouter.routes())
 
@@ -169,40 +170,40 @@ async function crawler() {
             const proxyServer = await getProxy()
             console.log(`page(${pos}) try: proxy(${proxyServer})`)
             await browse(URL_10086, 60 * 1000, async function (page) {
-                    // 重置条件
-                    await page.click('#reserveFee_')
+                // 重置条件
+                await page.click('#reserveFee_')
 
-                    while (pos <= pageCount) {
-                        // 页面选择
-                        await page.type('#kkpager_btn_go_input', `${pos}`)
-                        await page.click('#kkpager_btn_go')
+                while (pos <= pageCount) {
+                    // 页面选择
+                    await page.type('#kkpager_btn_go_input', `${pos}`)
+                    await page.click('#kkpager_btn_go')
 
-                        // 手机号 / 价格
-                        const originCount = res.size
-                        for (let i = 0; i < 20; i++) {
-                            try {
-                                const data = await page.$eval(`#num${i}`, function (ele) {
-                                    const numEle = ele
-                                    const priceEle = ele.nextSibling
+                    // 手机号 / 价格
+                    const originCount = res.size
+                    for (let i = 0; i < 20; i++) {
+                        try {
+                            const data = await page.$eval(`#num${i}`, function (ele) {
+                                const numEle = ele
+                                const priceEle = ele.nextSibling
 
-                                    return {
-                                        num: ele.lastChild.nodeValue,
-                                        price: parseInt(priceEle.firstChild.nodeValue && priceEle.firstChild.nodeValue.replace('元', '')),
-                                        timestamp: parseInt(new Date().getTime() / 1000),
-                                    }
-                                })
+                                return {
+                                    num: ele.lastChild.nodeValue,
+                                    price: parseInt(priceEle.firstChild.nodeValue && priceEle.firstChild.nodeValue.replace('元', '')),
+                                    timestamp: parseInt(new Date().getTime() / 1000),
+                                }
+                            })
 
-                                res.set(data.num, data)
-                            } catch (e) {
-                                break
-                            }
+                            res.set(data.num, data)
+                        } catch (e) {
+                            break
                         }
-
-                        console.log(`page(${pos}/${pageCount} = ${parseInt(pos * 100 / pageCount)}%): +${res.size - originCount}: ${res.size}. proxy(${proxyServer})`)
-
-                        pos++
                     }
-                },
+
+                    console.log(`page(${pos}/${pageCount} = ${parseInt(pos * 100 / pageCount)}%): +${res.size - originCount}: ${res.size}. proxy(${proxyServer})`)
+
+                    pos++
+                }
+            },
                 (err, url, proxyServer) => console.log(`page(${pos}) fail: proxy(${proxyServer})`),
                 proxyServer,
             )
@@ -232,10 +233,10 @@ async function save(datas) {
             await col.updateOne({
                 num: data.num
             }, {
-                $set: data
-            }, {
-                upsert: true
-            })
+                    $set: data
+                }, {
+                    upsert: true
+                })
         }
     })
 }
