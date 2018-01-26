@@ -4,6 +4,20 @@ import React, {
 import ReactDOM from 'react-dom'
 
 class App extends Component {
+    constructor(props) {
+        super(props)
+
+        this.state = {
+            nums: [],
+        }
+    }
+
+    onResult = (nums) => {
+        this.setState({
+            nums,
+        })
+    }
+
     render() {
         return (
             <div style={{
@@ -11,7 +25,8 @@ class App extends Component {
                 flex: 1,
                 flexDirection: 'column',
             }}>
-                <Condition />
+                <Condition onResult={this.onResult} />
+                <Nums nums={this.state.nums} />
             </div>
         )
     }
@@ -36,7 +51,7 @@ class Condition extends Component {
             const datas = await fetch(`http://10086.walfud.com/api/num?like=${this.like}`)
                 .then(res => res.json())
 
-            console.log(datas)
+            this.props.onResult && this.props.onResult(datas)
         })()
     }
 
@@ -133,6 +148,22 @@ class Like extends Component {
                 justifyContent: 'space-around',
             }}>
                 {child}
+            </div>
+        )
+    }
+}
+
+class Nums extends Component {
+    constructor(props) {
+        super(props)
+    }
+
+    render() {
+        return (
+            <div>
+                <ul>
+                    {this.props.nums.map(data => <li key={data.num}>{data.num}</li>)}
+                </ul>
             </div>
         )
     }
