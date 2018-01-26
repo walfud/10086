@@ -20,7 +20,6 @@ const URL_10086 = 'http://service.bj.10086.cn/phone/jxhsimcard/gotone_list.html'
 const app = new Koa()
 app.use(logger())
 app.use(bodyParser())
-// app.use(serve(path.resolve(__dirname, '../dist')))
 app.use(serve(`${__dirname}/../dist`))
 
 const apiRouter = new Router({
@@ -129,23 +128,7 @@ app.use(apiRouter.routes())
 
 const uiRouter = new Router()
 uiRouter.get('/', (ctx, next) => {
-    ctx.body = `
-<!DOCTYPE html>
-<html>
-
-<head>
-    <meta charset="utf-8">
-    <title>My 10086</title>
-</head>
-
-<body>
-    <div id="root">
-    </div>
-    <script src="/app.bundle.js"></script>
-</body>
-
-</html>
-`
+    ctx.body = fs.readFileSync('../dist/index.html')
 })
 app.use(uiRouter.routes())
 

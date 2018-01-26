@@ -1,13 +1,13 @@
 const path = require('path')
+const HtmlWebpackPlugin = require('html-webpack-plugin');
 
 module.exports = {
-    devtool: 'eval-source-map',
-
     entry: `${__dirname}/app/index.js`,
     output: {
         filename: 'app.bundle.js',
         path: `${__dirname}/dist`,
     },
+
     module: {
         rules: [{
             test: /\.js$/,
@@ -19,5 +19,19 @@ module.exports = {
                 }
             }
         }]
-    }
+    },
+
+    plugins: [
+        new HtmlWebpackPlugin({
+            inject: false,
+            template: require('html-webpack-template'),
+            title: 'My10086',
+            appMountId: 'root',
+        }),
+    ],
+
+    devtool: 'eval-source-map',
+    devServer: {
+        contentBase: './dist',
+    },
 }
