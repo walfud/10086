@@ -11,7 +11,8 @@
             "program": "${workspaceFolder}/server/index.js",
             "outFiles": [
                 "${workspaceRoot}/build/**.js"
-            ]
+            ],
+            "preLaunchTask": "build"
         },
         {
             // https://github.com/Microsoft/vscode-chrome-debug

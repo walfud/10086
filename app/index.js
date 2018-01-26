@@ -2,10 +2,6 @@ import React, {
     Component,
 } from 'react'
 import ReactDOM from 'react-dom'
-import {
-    Input,
-    Button,
-} from 'material-ui'
 
 class App extends Component {
     render() {
@@ -22,16 +18,26 @@ class App extends Component {
 }
 
 class Condition extends Component {
-    constructor() {
+    constructor(props) {
+        super(props)
         this.like = '1..........'
+        this.search;
     }
 
     onLikeChange = (like) => {
         this.like = like.replace(' ', '.')
     }
+    onLikeEnd = () => {
+        this.search.focus()
+    }
 
     onSearch = () => {
-        fetch(`http://10086.walfud.com/api/num?like=${like}`)
+        (async () => {
+            const datas = await fetch(`http://10086.walfud.com/api/num?like=${this.like}`)
+                .then(res => res.json())
+
+            console.log(datas)
+        })()
     }
 
     render() {
@@ -45,19 +51,21 @@ class Condition extends Component {
                     flex: 8,
                     flexDirection: 'column',
                 }}>
-                    <Like onChange={this.onLikeChange} />
+                    <Like
+                        onChange={this.onLikeChange}
+                        onEnd={this.onLikeEnd}
+                    />
                 </div>
                 <div style={{
                     display: 'flex',
                     flex: 2,
                 }}>
-                    <Button
-                        raised
-                        color="secondary"
+                    <button
                         onClick={this.onSearch}
+                        ref={btn => this.search = btn}
                     >
                         Secondary
-                    </Button>
+                    </button>
                 </div>
             </div>
         )
@@ -80,6 +88,7 @@ class Like extends Component {
             return
         }
 
+        // 文字
         const newNumArr = this.state.num.split('')
         newNumArr[index] = diffValue
         const newNum = newNumArr.join('')
@@ -87,25 +96,34 @@ class Like extends Component {
             num: newNum,
         })
 
+        // Focus
+        if (this.inputs.hasOwnProperty(index + 1)) {
+            const nextInput = this.inputs[index + 1]
+            nextInput.focus()
+        } else {
+            this.props.onEnd && this.props.onEnd()
+        }
+
+        // 回调
         this.props.onChange && this.props.onChange(newNum)
     }
 
     render() {
-        const child = this.state.num.split('').map((ele, index) => <Input
+        const child = this.state.num.split('').map((ele, index) => <input
             style={{
                 display: 'flex',
                 flex: 1,
                 minWidth: 10,
                 maxWidth: 60,
+                maxLength: 1,
                 type: 'number',
-                borderWidth: 1,
-                borderColor: '#666',
-                disableUnderline: true,
             }}
             key={index}
             value={this.state.num[index]}
             onChange={(event) => { this.onChange(index, ele, event.target.value) }}
-            ref={(input) => this.inputs[index + 1] = input}
+            ref={(input) => {
+                this.inputs[index] = input
+            }}
         />)
 
         return (
