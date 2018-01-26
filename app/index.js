@@ -4,6 +4,7 @@ import React, {
 import ReactDOM from 'react-dom'
 import {
     Input,
+    Button,
 } from 'material-ui'
 
 class App extends Component {
@@ -14,7 +15,50 @@ class App extends Component {
                 flex: 1,
                 flexDirection: 'column',
             }}>
-                <Like />
+                <Condition />
+            </div>
+        )
+    }
+}
+
+class Condition extends Component {
+    constructor() {
+        this.like = '1..........'
+    }
+
+    onLikeChange = (like) => {
+        this.like = like.replace(' ', '.')
+    }
+
+    onSearch = () => {
+        fetch(`http://10086.walfud.com/api/num?like=${like}`)
+    }
+
+    render() {
+        return (
+            <div style={{
+                display: 'flex',
+                flexDirection: 'row',
+            }}>
+                <div style={{
+                    display: 'flex',
+                    flex: 8,
+                    flexDirection: 'column',
+                }}>
+                    <Like onChange={this.onLikeChange} />
+                </div>
+                <div style={{
+                    display: 'flex',
+                    flex: 2,
+                }}>
+                    <Button
+                        raised
+                        color="secondary"
+                        onClick={this.onSearch}
+                    >
+                        Secondary
+                    </Button>
+                </div>
             </div>
         )
     }
@@ -26,20 +70,24 @@ class Like extends Component {
         this.state = {
             num: '1          ',
         }
+        this.inputs = {}
     }
 
     onChange = (index, oldValue, newValue) => {
         // 控制输入为一个数字
         const diffValue = newValue.replace(oldValue, '')
-        const newNum = this.state.num.split('')
         if (!/^\d|\s$/.test(diffValue)) {
             return
         }
 
-        newNum[index] = diffValue
+        const newNumArr = this.state.num.split('')
+        newNumArr[index] = diffValue
+        const newNum = newNumArr.join('')
         this.setState({
-            num: newNum.join(''),
+            num: newNum,
         })
+
+        this.props.onChange && this.props.onChange(newNum)
     }
 
     render() {
@@ -54,8 +102,10 @@ class Like extends Component {
                 borderColor: '#666',
                 disableUnderline: true,
             }}
+            key={index}
             value={this.state.num[index]}
-            onChange={(event) => {this.onChange(index, ele, event.target.value)}}
+            onChange={(event) => { this.onChange(index, ele, event.target.value) }}
+            ref={(input) => this.inputs[index + 1] = input}
         />)
 
         return (
