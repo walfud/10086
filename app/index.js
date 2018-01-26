@@ -25,7 +25,7 @@ class Condition extends Component {
     }
 
     onLikeChange = (like) => {
-        this.like = like.replace(' ', '.')
+        this.like = like.replace(/ /g, '.')
     }
     onLikeEnd = () => {
         this.search.focus()
