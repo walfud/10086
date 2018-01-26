@@ -6,7 +6,7 @@
   "scripts": {
     "start": "npm install && npm run build && node build/index.js",
     "build": "webpack && babel server -d build --source-maps",
-    "dev": "webpack-dev-server --open",
+    "dev": "webpack-dev-server",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],

@@ -24,12 +24,26 @@ class Like extends Component {
     constructor(props) {
         super(props)
         this.state = {
-            num: '1..........',
+            num: '1          ',
         }
     }
 
+    onChange = (index, oldValue, newValue) => {
+        // 控制输入为一个数字
+        const diffValue = newValue.replace(oldValue, '')
+        const newNum = this.state.num.split('')
+        if (!/^\d|\s$/.test(diffValue)) {
+            return
+        }
+
+        newNum[index] = diffValue
+        this.setState({
+            num: newNum.join(''),
+        })
+    }
+
     render() {
-        const child = this.state.num.split('').map((n) => <Input
+        const child = this.state.num.split('').map((ele, index) => <Input
             style={{
                 display: 'flex',
                 flex: 1,
@@ -40,8 +54,8 @@ class Like extends Component {
                 borderColor: '#666',
                 disableUnderline: true,
             }}
-            value={n}
-            onChange={this.onChange}
+            value={this.state.num[index]}
+            onChange={(event) => {this.onChange(index, ele, event.target.value)}}
         />)
 
         return (
