@@ -2,6 +2,7 @@ import React, {
     Component,
 } from 'react'
 import ReactDOM from 'react-dom'
+import querystring from 'querystring'
 
 class App extends Component {
     constructor(props) {
@@ -36,7 +37,8 @@ class Condition extends Component {
     constructor(props) {
         super(props)
         this.like = '1..........'
-        this.search;
+        this.search
+        this.no4 = false
     }
 
     onLikeChange = (like) => {
@@ -46,13 +48,19 @@ class Condition extends Component {
         this.search.focus()
     }
 
-    onSearch = () => {
-        (async () => {
-            const datas = await fetch(`http://10086.walfud.com/api/num?like=${this.like}`)
-                .then(res => res.json())
+    onNo4Change = (checked) => {
+        this.no4 = checked
+    }
 
-            this.props.onResult && this.props.onResult(datas)
-        })()
+    onSearch = async () => {
+        const param = querystring.stringify({
+            like: this.like,
+            no4: this.no4,
+        })
+        const datas = await fetch(`http://10086.walfud.com/api/num?${param}`)
+            .then(res => res.json())
+
+        this.props.onResult && this.props.onResult(datas)
     }
 
     render() {
@@ -70,6 +78,12 @@ class Condition extends Component {
                         onChange={this.onLikeChange}
                         onEnd={this.onLikeEnd}
                     />
+                    <div style={{
+                        display: 'flex',
+                        flexDirection: 'row',
+                    }}>
+                        <div><input id="no4" type="checkbox" onChange={event => this.onNo4Change(event.target.checked)} /> 不含 4</div>
+                    </div>
                 </div>
                 <div style={{
                     display: 'flex',
@@ -98,7 +112,7 @@ class Like extends Component {
 
     onChange = (index, oldValue, newValue) => {
         // 控制输入为一个数字
-        const diffValue = newValue.replace(oldValue, '')
+        const diffValue = newValue.replace(oldValue, '') || ' '
         if (!/^\d|\s$/.test(diffValue)) {
             return
         }
@@ -114,13 +128,17 @@ class Like extends Component {
         // Focus
         if (this.inputs.hasOwnProperty(index + 1)) {
             const nextInput = this.inputs[index + 1]
-            nextInput.focus()
+            nextInput.select()
         } else {
             this.props.onEnd && this.props.onEnd()
         }
 
         // 回调
         this.props.onChange && this.props.onChange(newNum)
+    }
+
+    onFocus = (event) => {
+        event.target.select()
     }
 
     render() {
@@ -130,12 +148,12 @@ class Like extends Component {
                 flex: 1,
                 minWidth: 10,
                 maxWidth: 60,
-                maxLength: 1,
                 type: 'number',
             }}
             key={index}
             value={this.state.num[index]}
             onChange={(event) => { this.onChange(index, ele, event.target.value) }}
+            onFocus={this.onFocus}
             ref={(input) => {
                 this.inputs[index] = input
             }}
@@ -145,7 +163,7 @@ class Like extends Component {
             <div style={{
                 display: 'flex',
                 flexDirection: 'row',
-                justifyContent: 'space-around',
+                justifyContent: 'space-between',
             }}>
                 {child}
             </div>
