@@ -38,6 +38,7 @@ class Condition extends Component {
         super(props)
         this.like = '1..........'
         this.search
+        this.contain
         this.no4 = false
     }
 
@@ -47,6 +48,9 @@ class Condition extends Component {
     onLikeEnd = () => {
         this.search.focus()
     }
+    onContainChange = (contain) => {
+        this.contain = contain
+    }
 
     onNo4Change = (checked) => {
         this.no4 = checked
@@ -55,6 +59,7 @@ class Condition extends Component {
     onSearch = async () => {
         const param = querystring.stringify({
             like: this.like,
+            contain: this.contain,
             no4: this.no4,
         })
         const datas = await fetch(`http://localhost:3000/api/num?${param}`)
@@ -74,10 +79,20 @@ class Condition extends Component {
                     flex: 8,
                     flexDirection: 'column',
                 }}>
-                    <Like
-                        onChange={this.onLikeChange}
-                        onEnd={this.onLikeEnd}
-                    />
+                    <div style={{
+                        display: 'flex',
+                        flexDirection: 'row',
+                    }}>
+                        精确搜索: 
+                        <Like
+                            onChange={this.onLikeChange}
+                            onEnd={this.onLikeEnd}
+                        />
+                    </div>
+                    <div>
+                        模糊搜索: 
+                        <input id="contain" type="number" onChange={event => this.onContainChange(event.target.value)} />
+                        </div>
                     <div style={{
                         display: 'flex',
                         flexDirection: 'row',
@@ -111,7 +126,7 @@ class Like extends Component {
     }
 
     onChange = (index, oldValue, newValue) => {
-        // 控制输入为一个数字
+        // 控制输入为一个字符
         const diffValue = newValue.replace(oldValue, '') || ' '
         if (!/^\d|\s$/.test(diffValue)) {
             return

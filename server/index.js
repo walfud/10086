@@ -92,6 +92,13 @@ apiRouter.get('/num', async (ctx, next) => {
             }
         })
     }
+    if (ctx.request.query.contain) {
+        pipeline.push({
+            $match: {
+                num: new RegExp(ctx.request.query.contain)
+            }
+        })
+    }
     // 价格
     if (ctx.request.query.price) {
         const [min = 0, max = 999999999] = ctx.request.query.price.split('-')
