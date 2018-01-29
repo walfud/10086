@@ -57,7 +57,7 @@ class Condition extends Component {
             like: this.like,
             no4: this.no4,
         })
-        const datas = await fetch(`http://10086.walfud.com/api/num?${param}`)
+        const datas = await fetch(`http://localhost:3000/api/num?${param}`)
             .then(res => res.json())
 
         this.props.onResult && this.props.onResult(datas)

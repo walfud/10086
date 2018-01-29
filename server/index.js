@@ -85,7 +85,7 @@ apiRouter.get('/num', async (ctx, next) => {
     const pipeline = []
 
     // 不包含 4
-    if (ctx.request.query.no4) {
+    if (!/^(false|0|no|null|undefined)?$/i.test(ctx.request.query.no4)) {
         pipeline.push({
             $match: {
                 num: /^1[0-35-9]{10}$/
