@@ -83,16 +83,16 @@ class Condition extends Component {
                         display: 'flex',
                         flexDirection: 'row',
                     }}>
-                        精确搜索: 
+                        精确搜索:
                         <Like
                             onChange={this.onLikeChange}
                             onEnd={this.onLikeEnd}
                         />
                     </div>
                     <div>
-                        模糊搜索: 
+                        模糊搜索:
                         <input id="contain" type="number" onChange={event => this.onContainChange(event.target.value)} />
-                        </div>
+                    </div>
                     <div style={{
                         display: 'flex',
                         flexDirection: 'row',
@@ -192,11 +192,24 @@ class Nums extends Component {
     }
 
     render() {
+        const now = new Date().valueOf()
+        const rows = this.props.nums
+            // .filter(data => data.timestamp + 3 * 24 * 60 * 60 > now)    // 三天之内的数据
+            .sort((a, b) => parseInt(a.num) - parseInt(b.num))
+            .map(data =>
+                <tr>
+                    <th>{data.num}</th>
+                    <th>{data.price}</th>
+                </tr>)
         return (
             <div>
-                <ul>
-                    {this.props.nums.map(data => <li key={data.num}>{data.num}</li>)}
-                </ul>
+                <table>
+                    <tr>
+                        <th>号码</th>
+                        <th>价格</th>
+                    </tr>
+                    {rows}
+                </table>
             </div>
         )
     }
